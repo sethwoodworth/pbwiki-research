@@ -20,7 +20,7 @@
 <script type="text/javascript" src="datefmt.js"></script>
 
 <script type="text/javascript">
-var current_wiki_url = 'http://basically.pbworks.com';
+var current_wiki_url = 'http://alexmoye.pbworks.com';
 //another possible example wiki: http://andrewscad.pbworks.com
 var current_page = ''; //name of current page, string
 var current_wiki_sorted_versions = {};
@@ -41,8 +41,8 @@ var current_wiki_days_since_ceiling_timestamp = 99999999999999999999999;
 //whether or not the page that we are currently looking at is a diff (as opposed to a specific page version):
 var in_diff_mode = false;
 
-//var debugmode = true;
-var debugmode = false;
+var debugmode = true;
+//var debugmode = false;
 
 //these things get run after dom load
 $(function(){
@@ -73,13 +73,50 @@ function set_wiki(){
     current_wiki_url = document.get_revs.wiki_url.value;
     //$.get(current_wiki_url);
     //for faster debugging:
-    if(debugmode){ current_wiki_url = 'http://basically.pbworks.com/'; }
+    if(debugmode){ current_wiki_url = 'http://alexmoye.pbworks.com/'; }
     //we were doing the below until we realized that it doesnt seem to work--due to pbwiki cross-browser security something or other?
     //url = current_wiki_url + '/api_v2/?op=GetChanges&_type=jsontext&reverse=false';
     //easy fix: use a server-side proxy
     url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetChanges&_type=jsontext';
+    pages_url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetPages&verbose=false&_type=jsontext';
+
+    // GetPages on the wiki
+    $.getJSON(pages_url, function(pages_dict) {
+        pages_list = new Array();
+        page_revisions = new Array();
+        for (page in pages_dict["pages"]) {
+            pages_list.push(pages_dict["pages"][page]["name"]);
+        };
+        // Get page revisions on each page
+        for (page in pages_list) {
+            page_url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetPageRevisions&_type=jsontext&page=' +  encodeURI(pages_list[page]);
+            $.getJSON(page_url, function(page_dict) {
+                page_revisions[pages_list[page]] = page_dict["revisions"];
+            });
+        };
+        });
+    //});
+
+
+
+
+    //// this is the version that *should* iterate
+    //$.getJSON(url, function(data) {
+    //    test_changes = data.changes;
+    //    hash = data.changes[0].hash;
+    //    alert(hash)
+    //    nurl = url + '&after_hash=' + hash;
+    //    $.getJSON(nurl, function(data2) {
+    //        data2_changes = data2.changes;
+    //        both_changes = {};
+    //        both_changes = test_changes.concat(data2.changes);
+    //    });
+    //});
+
+    // this is the version that only gets 100 results
     //this is the ajaxey part. 'data' is what we get back from the API
     $.getJSON(url, function(data) {
+
         //this stuff happens as long as our ajaxey api call didnt fail (like 404 or something)
         //reformat their revision history to only include the stuff that we want, and in the format that we want
         //ALSO: this function sneakily figures out when the wiki was created and stores the answer in a global
@@ -128,8 +165,8 @@ function sort_revisions(list_of_changes) {
         }
     }
     //save our wiki creation date as a string, so we can report it to the humans
-    var d = new Date(parseInt(current_wiki_earliest_edit_timestamp + "000"));
-    current_wiki_earliest_edit_datestr = d.format("UTC:yyyy-mm-dd-HH-MM-ss");
+    var daate = new Date(parseInt(current_wiki_earliest_edit_timestamp + "000"));
+    current_wiki_earliest_edit_datestr = daate.format("UTC:yyyy-mm-dd-HH-MM-ss");
     return change_dict;
 }
 
@@ -180,8 +217,8 @@ function calculate_days_since(){
 //actually load a page in the frame--based on the globals that we've been carefully keeping track of
 function load_revision(){
     //set up the url
-    d = new Date(parseInt(current_wiki_sorted_versions[current_page][current_page_version_key] + "000"));
-    new_url = current_wiki_url + '/' + current_page + "." + d.format("UTC:yyyy-mm-dd-HH-MM-ss");
+    daate = new Date(parseInt(current_wiki_sorted_versions[current_page][current_page_version_key] + "000"));
+    new_url = current_wiki_url + '/' + current_page + "." + daate.format("UTC:yyyy-mm-dd-HH-MM-ss");
     //take us there in the frame
     $("#results")[0].src = new_url;
     //assert that we're not in diff mode, and adjust the button accordingly
@@ -269,17 +306,18 @@ function update_next_prev_buttons(){
     var prev_button = $('#prev_button');
     var should_show_prev = current_page_version_key > 0;
     var should_show_next = current_page_version_key < current_wiki_sorted_versions[current_page].length-1;
+    //TODO: Add a .grey() function, removing hiding feature as per Justin's request
     if(should_show_prev){
-        prev_button.show();
+        document.get_revs.prev_button.disabled = false;
     }
     else{
-        prev_button.hide();
+        document.get_revs.prev_button.disabled = true;
     }
     if(should_show_next){
-        next_button.show();
+        document.get_revs.next_button.disabled = false;
     }
     else{
-        next_button.hide();
+        document.get_revs.next_button.disabled = true;
     }
 }
 
@@ -404,7 +442,7 @@ function resize_results() {
         </form>
     </div>
     <div id="results-box">
-        <iframe src="" id="results" name="results" frameborder="0" border="0"><p>THIS WONT WORK WITHOUT IFRAMES</p></iframe>
+        <iframe src="" id="results" name="results" frameborder="0" border="0"><p>THIS WONT WORK WITHOUT IFRAMES, go <a href="http://getfirefox.com">get firefox</a></p></iframe>
     </div>
 
 </body>
