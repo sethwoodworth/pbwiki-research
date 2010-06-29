@@ -41,8 +41,8 @@ var current_wiki_days_since_ceiling_timestamp = 99999999999999999999999;
 //whether or not the page that we are currently looking at is a diff (as opposed to a specific page version):
 var in_diff_mode = false;
 
-var debugmode = true;
-//var debugmode = false;
+//var debugmode = true;
+var debugmode = false;
 
 //these things get run after dom load
 $(function(){
@@ -68,38 +68,51 @@ $(function(){
 
 //this gets fired when you click "Set wiki" (which you'll want to do after entering a wiki url)
 function set_wiki(){
+
     var revisions = {};
     //grab the url entered in the text field
+    // TODO: if the last character is /, remove it!
     current_wiki_url = document.get_revs.wiki_url.value;
     //$.get(current_wiki_url);
     //for faster debugging:
-    if(debugmode){ current_wiki_url = 'http://alexmoye.pbworks.com'; }
-    //we were doing the below until we realized that it doesnt seem to work--due to pbwiki cross-browser security something or other?
-    //easy fix: use a server-side proxy
-    url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetChanges&_type=jsontext';
-    pages_url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetPages&verbose=false&_type=jsontext';
+    if(debugmode){ current_wiki_url = 'http://testapi.pbworks.com'; }
+    // Serverside proxy bc pbw avoids cross site scripting
+    pages_url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetPages&verbose=false&_type=jsontext'; // url for seth
+
+    // Seth's reimplementation without a limit of 100
 
     // GetPages on the wiki
     $.getJSON(pages_url, function(pages_dict) {
-        pages_list = new Array();
-        page_revisions = new Array();
-        for (page in pages_dict["pages"]) {
-            pages_list.push(pages_dict["pages"][page]["name"]);
-        };
-        // Get page revisions on each page
-        for (page in pages_list) {
-            page_url = 'revproxy.php?url=' + current_wiki_url + '/api_v2/op/GetPageRevisions/page/' +  pages_list[page].replace(/ /g,"+") + '/_type/jsontext';
-            $.getJSON(page_url, function(page_dict) {
-                page_dict = page_dict;
-                page_revisions[pages_list[page]] = page_dict["revisions"];
-            });
-        };
-        });
-    //});
+        pages_array = new Array();
+
+
+            function callback_generator (int) {
+            var x = int;
+            var fun_bike  = function callback(rev_data) {
+                pages_array[x]["data"] = rev_data["revisions"];
+                };
+            return fun_bike;
+            };
+
+            for (var m = 0; m < pages_dict["pages"].length; m++) {
+                pages_array[m] = {};
+                pages_array[m]["name"] = pages_dict["pages"][m]["name"];
+                pages_array[m]["url"] = 'proxy.php?url=' + current_wiki_url + '/api_v2/op/GetPageRevisions/page/' +  pages_dict["pages"][m]["name"].replace(/ /g,"+") + '/_type/jsontext';
+                pages_array[m]["data"] = {};
+            };
+
+            for (var n = 0; n < pages_dict["pages"].length; n++) {
+                $.getJSON(pages_array[n]["url"], callback_generator(n) );
+            };
+
+    });
+
+    //all_page_revisions = grab_all_page_revisions($.getJSON(pages_url));
 
 
 
 
+    url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetChanges&_type=jsontext'; // url for parker
 
     // this is the version that only gets 100 results (seth)
     //this is the ajaxey part. 'data' is what we get back from the API (parker)
@@ -153,8 +166,8 @@ function sort_revisions(list_of_changes) {
         }
     }
     //save our wiki creation date as a string, so we can report it to the humans
-    var daate = new Date(parseInt(current_wiki_earliest_edit_timestamp + "000"));
-    current_wiki_earliest_edit_datestr = daate.format("UTC:yyyy-mm-dd-HH-MM-ss");
+    var earliest_date = new Date(parseInt(current_wiki_earliest_edit_timestamp + "000"));
+    current_wiki_earliest_edit_datestr = earliest_date.format("UTC:yyyy-mm-dd-HH-MM-ss");
     return change_dict;
 }
 
@@ -205,8 +218,8 @@ function calculate_days_since(){
 //actually load a page in the frame--based on the globals that we've been carefully keeping track of
 function load_revision(){
     //set up the url
-    daate = new Date(parseInt(current_wiki_sorted_versions[current_page][current_page_version_key] + "000"));
-    new_url = current_wiki_url + '/' + current_page + "." + daate.format("UTC:yyyy-mm-dd-HH-MM-ss");
+    d = new Date(parseInt(current_wiki_sorted_versions[current_page][current_page_version_key] + "000"));
+    new_url = current_wiki_url + '/' + current_page + "." + d.format("UTC:yyyy-mm-dd-HH-MM-ss");
     //take us there in the frame
     $("#results")[0].src = new_url;
     //assert that we're not in diff mode, and adjust the button accordingly
@@ -294,7 +307,7 @@ function update_next_prev_buttons(){
     var prev_button = $('#prev_button');
     var should_show_prev = current_page_version_key > 0;
     var should_show_next = current_page_version_key < current_wiki_sorted_versions[current_page].length-1;
-    //TODO: Add a .grey() function, removing hiding feature as per Justin's request
+    //TODO: make grey'd buttons prettier
     if(should_show_prev){
         document.get_revs.prev_button.disabled = false;
     }
@@ -310,8 +323,8 @@ function update_next_prev_buttons(){
 }
 
 // stupid-simple: grabs the currently selected page from the page drop-down and saves it in a global
-// this should get called whenever the dropdown gets used
-function update_current_page(){
+// this should get called whenever the dropdown gets used (parker)
+function update_current_page() {
     current_page = $("#page_list")[0].value;
     //i think that this edge case doesn't happen any more...leaving this in anyway just in case --Parker
     if(current_page == ""){
