@@ -20,7 +20,7 @@
 <script type="text/javascript" src="datefmt.js"></script>
 
 <script type="text/javascript">
-var current_wiki_url = 'http://basically.pbworks.com';
+var current_wiki_url = 'http://alexmoye.pbworks.com';
 //another possible example wiki: http://andrewscad.pbworks.com
 var current_page = ''; //name of current page, string
 var current_wiki_sorted_versions = {};
@@ -41,7 +41,6 @@ var current_wiki_days_since_ceiling_timestamp = 99999999999999999999999;
 //whether or not the page that we are currently looking at is a diff (as opposed to a specific page version):
 var in_diff_mode = false;
 
-//var debugmode = true;
 var debugmode = false;
 
 //these things get run after dom load
@@ -66,72 +65,102 @@ $(function(){
 	//$("#after").datepicker();
 });
 
-//this gets fired when you click "Set wiki" (which you'll want to do after entering a wiki url)
-function set_wiki(){
+
+function set_wiki_a() {
     var revisions = {};
     //grab the url entered in the text field
+    // TODO: if the last character is /, remove it!
     current_wiki_url = document.get_revs.wiki_url.value;
     //$.get(current_wiki_url);
     //for faster debugging:
-    if(debugmode){ current_wiki_url = 'http://basically.pbworks.com/'; }
-    //we were doing the below until we realized that it doesnt seem to work--due to pbwiki cross-browser security something or other?
-    //url = current_wiki_url + '/api_v2/?op=GetChanges&_type=jsontext&reverse=false';
-    //easy fix: use a server-side proxy
-    url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetChanges&_type=jsontext';
-    //this is the ajaxey part. 'data' is what we get back from the API
-    $.getJSON(url, function(data) {
-        //this stuff happens as long as our ajaxey api call didnt fail (like 404 or something)
-        //reformat their revision history to only include the stuff that we want, and in the format that we want
-        //ALSO: this function sneakily figures out when the wiki was created and stores the answer in a global
-        current_wiki_sorted_versions_unfiltered = sort_revisions(data.changes);
-        //keep a copy of this data in _unfiltered, so that we still have it after applying a filter
-        //(like "only show stuff from X days after wiki creation")
-        current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered
-        //temporarily disable page_menu onchange handler
-        temporarily_disabled_page_menu_handler = $("#page_list").change;
-        $("#page_list").change(function(){});
-        update_page_menu(current_wiki_sorted_versions);
-        $("#page_list").change(temporarily_disabled_page_menu_handler);
-        //make the current page be the first page in our list--this is an arbitrary choice
-        current_page = $("#page_list")[0].firstChild.firstChild.nodeValue;
-        update_next_prev_buttons();
-        update_location_reporting();
-        update_wiki_age_reporting();
-        load_revision();
-    });
-}
+    if(debugmode){ current_wiki_url = 'http://alexmoye.pbworks.com'; }
+    // Serverside proxy bc pbw avoids cross site scripting
+    pages_url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetPages&verbose=false&_type=jsontext';
 
-//reformat their revision history to only include the stuff that we want, and in the format that we want
-//ALSO: this function sneakily figures out when the wiki was created and stores the answer in a global
-//NOTE: all the rest of our functions like this just alter globals--maybe this one should just save its answer instead of returning it?
-function sort_revisions(list_of_changes) {
-    var change_dict = {};
-    //the below is arbitrary seeding--we're going to iterate and by the end actually have the earliest timestamp in the edit history
-    current_wiki_earliest_edit_timestamp = list_of_changes[0].time;
-    //loop through all the changes
-    for(i = 0; i < list_of_changes.length; i++){
-        next_page = list_of_changes[i].title;
-        //FILTER OUT ANY PAGE NAMES WITH A DOT ('.') in them--they're just files and we probably don't care about them
-        if(next_page.indexOf('.') == -1){
-            if(change_dict[next_page]) {
-                //'unshift' means 'prepend' -- this way the oldest version of the page is the first item in our list
-                change_dict[next_page].unshift(list_of_changes[i].time);
-            //make sure that we create the array key if we don't already have it
-            } else {
-                change_dict[next_page] = new Array(list_of_changes[i].time);
+    // Seth's reimplementation without a limit of 100
+    // GetPages on the wiki
+    $.getJSON(pages_url, function(pages_dict) {
+        pages_array = new Array();
+
+            function callback_generator (int) {
+            var x = int;
+            var fun_bike  = function callback(rev_data) {
+                pages_array[x]["data"] = rev_data["revisions"];
+                current_wiki_sorted_versions_unfiltered[pages_array[x]["name"]] = rev_data["revisions"];
+
+                if (pages_array[x]["name"] == "FrontPage") {
+                    current_wiki_earliest_edit_timestamp = rev_data["revisions"][0];
+                    var earliest_date = new Date(parseInt(current_wiki_earliest_edit_timestamp + "000"));
+                    current_wiki_earliest_edit_datestr = earliest_date.format("UTC:yyyy-mm-dd");
+                    update_wiki_age_reporting();
+                    };
+
+                };
+            return fun_bike;
+            };
+
+            var pages = $("#page_list")[0];
+
+            while(pages.hasChildNodes())
+            {
+                pages.removeChild(pages.lastChild);
             }
-            //if this is our earliest timestamp yet, make a note of it!
-            //at the end of this loop, we'll have the timestamp for the wiki creation date
-            if(list_of_changes[i].time < current_wiki_earliest_edit_timestamp){
-                current_wiki_earliest_edit_timestamp = list_of_changes[i].time;
-            }
-        }
-    }
-    //save our wiki creation date as a string, so we can report it to the humans
-    var d = new Date(parseInt(current_wiki_earliest_edit_timestamp + "000"));
-    current_wiki_earliest_edit_datestr = d.format("UTC:yyyy-mm-dd-HH-MM-ss");
-    return change_dict;
-}
+
+            for (var m = 0; m < pages_dict["pages"].length; m++) {
+                pages_array[m] = {};
+                pages_array[m]["name"] = pages_dict["pages"][m]["name"];
+                pages_array[m]["url"] = 'proxy.php?url=' + current_wiki_url + '/api_v2/op/GetPageRevisions/page/' +  pages_dict["pages"][m]["name"].replace(/ /g,"+") + '/_type/jsontext';
+                pages_array[m]["data"] = {};
+
+                option = document.createElement("option");
+                option.appendChild(document.createTextNode(pages_array[m]["name"]));
+                pages.appendChild(option);
+            };
+
+            current_wiki_sorted_versions_unfiltered = {};
+
+            for (var n = 0; n < pages_dict["pages"].length; n++) {
+                $.getJSON(pages_array[n]["url"], callback_generator(n) );
+            };
+    });
+};
+            
+function set_wiki_b() {
+            // My version of parker's housekeeping at the end of setwiki() (seth)
+            
+            // keep a copy of this data in _unfiltered, so that we still have it after applying a filter
+            current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
+
+            ////temporarily disable page_menu onchange handler
+            //temporarily_disabled_page_menu_handler = $("#page_list").change;
+            //$("#page_list").change(function(){});
+            //update_page_menu(current_wiki_sorted_versions);
+            //$("#page_list").change(temporarily_disabled_page_menu_handler);
+            //page_select = $("#page_list");
+            ////make the current page be the first page in our list--this is an arbitrary choice
+            //current_page = $("#page_list")[0].firstChild.firstChild.nodeValue;
+
+            // prepare dropdown list handling
+            update_current_page();
+            update_page_menu(current_wiki_sorted_versions);
+
+            //// Date formatting
+            //current_wiki_earliest_edit_timestamp = current_wiki_sorted_versions_unfiltered["FrontPage"][0];
+            //var earliest_date = new Date(parseInt(current_wiki_earliest_edit_timestamp + "000"));
+            //current_wiki_earliest_edit_datestr = earliest_date.format("UTC:yyyy-mm-dd-HH-MM-ss");
+
+            // button spooling
+            update_next_prev_buttons();
+            update_location_reporting();
+            load_revision();
+};
+
+//this gets fired when you click "Set wiki" (which you'll want to do after entering a wiki url)
+function set_wiki(){
+    set_wiki_a();
+    set_wiki_b();
+};
+
 
 //filter out all the revisions above a certain timestamp ceiling (specified by the arg)
 function filter_revisions(ceiling_timestamp){
@@ -140,16 +169,16 @@ function filter_revisions(ceiling_timestamp){
     for(var i in current_wiki_sorted_versions_unfiltered){
         for(var j in current_wiki_sorted_versions_unfiltered[i]){
             //only include the things that fit under our ceiling date (as specified in the dropdown)
+            //alert(current_wiki_sorted_versions_unfiltered[i][j]);
             if(current_wiki_sorted_versions_unfiltered[i][j] <= ceiling_timestamp){
-                //(create the index in our array, if it doesn't exist yet)
-                if(!current_wiki_sorted_versions[i]){
+                if (!([i] in current_wiki_sorted_versions)) {
                     current_wiki_sorted_versions[i] = [];
-                }
+                   }; 
                 current_wiki_sorted_versions[i].push(current_wiki_sorted_versions_unfiltered[i][j]);
-            }
-        }
-    }
-}
+            };
+        };
+    };
+};
 
 //this gets fired when you choose a ceiling number of days since creation from the drop-down
 function restrict_by_days_since(){
@@ -163,7 +192,7 @@ function restrict_by_days_since(){
     //we're careful to do this before running update_current_page
     //(this way we can be sure that the page they end up looking at is one that existed before the ceiling date)
     update_page_menu(current_wiki_sorted_versions);
-    update_current_page();
+    //update_current_page();
     update_next_prev_buttons();
     update_location_reporting();
     update_wiki_age_reporting();
@@ -265,27 +294,35 @@ function supernext(){
 
 //show/hide the next/prev buttons as appropriate
 function update_next_prev_buttons(){
+    if (current_wiki_sorted_versions == "") {
+        current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
+    };
     var next_button = $('#next_button');
     var prev_button = $('#prev_button');
     var should_show_prev = current_page_version_key > 0;
     var should_show_next = current_page_version_key < current_wiki_sorted_versions[current_page].length-1;
+    //TODO: make grey'd buttons prettier
     if(should_show_prev){
-        prev_button.show();
+        document.get_revs.prev_button.disabled = false;
     }
     else{
-        prev_button.hide();
+        document.get_revs.prev_button.disabled = true;
     }
     if(should_show_next){
-        next_button.show();
+        document.get_revs.next_button.disabled = false;
     }
     else{
-        next_button.hide();
+        document.get_revs.next_button.disabled = true;
     }
 }
 
-// stupid-simple: grabs the currently selected page from the page drop-down and saves it in a global
-// this should get called whenever the dropdown gets used
-function update_current_page(){
+// grabs the currently selected page from the page drop-down and saves it in a global
+// this should get called whenever the dropdown gets used (parker)
+// also sets c_w_s_v from c_w_s_v_u if the first is still empty (as is on first time called)
+function update_current_page() {
+    if (current_wiki_sorted_versions == {}) {
+        current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
+    };
     current_page = $("#page_list")[0].value;
     //i think that this edge case doesn't happen any more...leaving this in anyway just in case --Parker
     if(current_page == ""){
@@ -404,7 +441,7 @@ function resize_results() {
         </form>
     </div>
     <div id="results-box">
-        <iframe src="" id="results" name="results" frameborder="0" border="0"><p>THIS WONT WORK WITHOUT IFRAMES</p></iframe>
+        <iframe src="" id="results" name="results" frameborder="0" border="0"><p>THIS WONT WORK WITHOUT IFRAMES, go <a href="http://getfirefox.com">get firefox</a></p></iframe>
     </div>
 
 </body>
