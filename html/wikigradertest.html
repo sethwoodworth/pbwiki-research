@@ -73,9 +73,8 @@ function set_wiki(){
     current_wiki_url = document.get_revs.wiki_url.value;
     //$.get(current_wiki_url);
     //for faster debugging:
-    if(debugmode){ current_wiki_url = 'http://alexmoye.pbworks.com/'; }
+    if(debugmode){ current_wiki_url = 'http://alexmoye.pbworks.com'; }
     //we were doing the below until we realized that it doesnt seem to work--due to pbwiki cross-browser security something or other?
-    //url = current_wiki_url + '/api_v2/?op=GetChanges&_type=jsontext&reverse=false';
     //easy fix: use a server-side proxy
     url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetChanges&_type=jsontext';
     pages_url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetPages&verbose=false&_type=jsontext';
@@ -89,8 +88,9 @@ function set_wiki(){
         };
         // Get page revisions on each page
         for (page in pages_list) {
-            page_url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetPageRevisions&_type=jsontext&page=' +  encodeURI(pages_list[page]);
+            page_url = 'revproxy.php?url=' + current_wiki_url + '/api_v2/op/GetPageRevisions/page/' +  pages_list[page].replace(/ /g,"+") + '/_type/jsontext';
             $.getJSON(page_url, function(page_dict) {
+                page_dict = page_dict;
                 page_revisions[pages_list[page]] = page_dict["revisions"];
             });
         };
@@ -100,21 +100,9 @@ function set_wiki(){
 
 
 
-    //// this is the version that *should* iterate
-    //$.getJSON(url, function(data) {
-    //    test_changes = data.changes;
-    //    hash = data.changes[0].hash;
-    //    alert(hash)
-    //    nurl = url + '&after_hash=' + hash;
-    //    $.getJSON(nurl, function(data2) {
-    //        data2_changes = data2.changes;
-    //        both_changes = {};
-    //        both_changes = test_changes.concat(data2.changes);
-    //    });
-    //});
 
-    // this is the version that only gets 100 results
-    //this is the ajaxey part. 'data' is what we get back from the API
+    // this is the version that only gets 100 results (seth)
+    //this is the ajaxey part. 'data' is what we get back from the API (parker)
     $.getJSON(url, function(data) {
 
         //this stuff happens as long as our ajaxey api call didnt fail (like 404 or something)
