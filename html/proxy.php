@@ -21,11 +21,11 @@ function file_get_contents_curl($url) {
 $url = $_GET['url'];
 // for debugging
 //$url = "http://alexmoye.pbworks.com/api_v2/op/GetPageRevisions/page/Ben+Smith+Day+1/_type/jsontext";
-$url = str_replace(' ', '+', $url);
+$url2 = str_replace(' ', '+', $url);
 header('Content-type: application/json');
 
 // rid ourselves of needless header response
-$response = trim(file_get_contents_curl($url));
+$response = trim(file_get_contents_curl($url2));
 $explosion = explode("\n", $response);
 $lastindex = count($explosion) - 1;
 if($explosion[$lastindex] == '*/'){
