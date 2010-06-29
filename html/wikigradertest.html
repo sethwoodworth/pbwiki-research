@@ -41,7 +41,6 @@ var current_wiki_days_since_ceiling_timestamp = 99999999999999999999999;
 //whether or not the page that we are currently looking at is a diff (as opposed to a specific page version):
 var in_diff_mode = false;
 
-//var debugmode = true;
 var debugmode = false;
 
 //these things get run after dom load
@@ -74,16 +73,14 @@ function set_wiki_a() {
     current_wiki_url = document.get_revs.wiki_url.value;
     //$.get(current_wiki_url);
     //for faster debugging:
-    if(debugmode){ current_wiki_url = 'http://testapi.pbworks.com'; }
+    if(debugmode){ current_wiki_url = 'http://alexmoye.pbworks.com'; }
     // Serverside proxy bc pbw avoids cross site scripting
-    pages_url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetPages&verbose=false&_type=jsontext'; // url for seth
+    pages_url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetPages&verbose=false&_type=jsontext';
 
     // Seth's reimplementation without a limit of 100
-
     // GetPages on the wiki
     $.getJSON(pages_url, function(pages_dict) {
         pages_array = new Array();
-
 
             function callback_generator (int) {
             var x = int;
@@ -91,31 +88,33 @@ function set_wiki_a() {
                 pages_array[x]["data"] = rev_data["revisions"];
                 current_wiki_sorted_versions_unfiltered[pages_array[x]["name"]] = rev_data["revisions"];
 
-                var pages = $("#page_list")[0];
-                option = document.createElement("option");
-                option.appendChild(document.createTextNode(pages_array[x]["name"]));
-                pages.appendChild(option);
+                if (pages_array[x]["name"] == "FrontPage") {
+                    current_wiki_earliest_edit_timestamp = rev_data["revisions"][0];
+                    var earliest_date = new Date(parseInt(current_wiki_earliest_edit_timestamp + "000"));
+                    current_wiki_earliest_edit_datestr = earliest_date.format("UTC:yyyy-mm-dd");
+                    update_wiki_age_reporting();
+                    };
 
-                current_page = $("#page_list")[0].firstChild.firstChild.nodeValue;
-
-                
                 };
             return fun_bike;
             };
 
-            function reformat_generator (pages_array, int) {
-            var y = int;
-            var tall_bike  = function reformat(pages_array, y) {
-                current_wiki_sorted_versions_unfiltered[[pages_array][y]["name"]] = pages_array["data"];
-                };
-            return tall_bike;
-            };
+            var pages = $("#page_list")[0];
+
+            while(pages.hasChildNodes())
+            {
+                pages.removeChild(pages.lastChild);
+            }
 
             for (var m = 0; m < pages_dict["pages"].length; m++) {
                 pages_array[m] = {};
                 pages_array[m]["name"] = pages_dict["pages"][m]["name"];
                 pages_array[m]["url"] = 'proxy.php?url=' + current_wiki_url + '/api_v2/op/GetPageRevisions/page/' +  pages_dict["pages"][m]["name"].replace(/ /g,"+") + '/_type/jsontext';
                 pages_array[m]["data"] = {};
+
+                option = document.createElement("option");
+                option.appendChild(document.createTextNode(pages_array[m]["name"]));
+                pages.appendChild(option);
             };
 
             current_wiki_sorted_versions_unfiltered = {};
@@ -131,31 +130,35 @@ function set_wiki_b() {
             
             // keep a copy of this data in _unfiltered, so that we still have it after applying a filter
             current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
-            //temporarily disable page_menu onchange handler
-            temporarily_disabled_page_menu_handler = $("#page_list").change;
-            $("#page_list").change(function(){});
-            update_page_menu(current_wiki_sorted_versions);
-            $("#page_list").change(temporarily_disabled_page_menu_handler);
-            page_select = $("#page_list");
-            //make the current page be the first page in our list--this is an arbitrary choice
-            current_page = $("#page_list")[0].firstChild.firstChild.nodeValue;
 
-            // Date formatting
-            current_wiki_earliest_edit_timestamp = current_wiki_sorted_versions_unfiltered["FrontPage"][0];
-            var earliest_date = new Date(parseInt(current_wiki_earliest_edit_timestamp + "000"));
-            current_wiki_earliest_edit_datestr = earliest_date.format("UTC:yyyy-mm-dd-HH-MM-ss");
+            ////temporarily disable page_menu onchange handler
+            //temporarily_disabled_page_menu_handler = $("#page_list").change;
+            //$("#page_list").change(function(){});
+            //update_page_menu(current_wiki_sorted_versions);
+            //$("#page_list").change(temporarily_disabled_page_menu_handler);
+            //page_select = $("#page_list");
+            ////make the current page be the first page in our list--this is an arbitrary choice
+            //current_page = $("#page_list")[0].firstChild.firstChild.nodeValue;
+
+            // prepare dropdown list handling
+            update_current_page();
+            update_page_menu(current_wiki_sorted_versions);
+
+            //// Date formatting
+            //current_wiki_earliest_edit_timestamp = current_wiki_sorted_versions_unfiltered["FrontPage"][0];
+            //var earliest_date = new Date(parseInt(current_wiki_earliest_edit_timestamp + "000"));
+            //current_wiki_earliest_edit_datestr = earliest_date.format("UTC:yyyy-mm-dd-HH-MM-ss");
 
             // button spooling
             update_next_prev_buttons();
             update_location_reporting();
-            update_wiki_age_reporting();
             load_revision();
 };
 
 //this gets fired when you click "Set wiki" (which you'll want to do after entering a wiki url)
 function set_wiki(){
-set_wiki_a();
-set_wiki_b();
+    set_wiki_a();
+    set_wiki_b();
 };
 
 
@@ -166,16 +169,16 @@ function filter_revisions(ceiling_timestamp){
     for(var i in current_wiki_sorted_versions_unfiltered){
         for(var j in current_wiki_sorted_versions_unfiltered[i]){
             //only include the things that fit under our ceiling date (as specified in the dropdown)
+            //alert(current_wiki_sorted_versions_unfiltered[i][j]);
             if(current_wiki_sorted_versions_unfiltered[i][j] <= ceiling_timestamp){
-                //(create the index in our array, if it doesn't exist yet)
-                if(!current_wiki_sorted_versions[i]){
+                if (!([i] in current_wiki_sorted_versions)) {
                     current_wiki_sorted_versions[i] = [];
-                }
+                   }; 
                 current_wiki_sorted_versions[i].push(current_wiki_sorted_versions_unfiltered[i][j]);
-            }
-        }
-    }
-}
+            };
+        };
+    };
+};
 
 //this gets fired when you choose a ceiling number of days since creation from the drop-down
 function restrict_by_days_since(){
@@ -189,7 +192,7 @@ function restrict_by_days_since(){
     //we're careful to do this before running update_current_page
     //(this way we can be sure that the page they end up looking at is one that existed before the ceiling date)
     update_page_menu(current_wiki_sorted_versions);
-    update_current_page();
+    //update_current_page();
     update_next_prev_buttons();
     update_location_reporting();
     update_wiki_age_reporting();
@@ -291,6 +294,9 @@ function supernext(){
 
 //show/hide the next/prev buttons as appropriate
 function update_next_prev_buttons(){
+    if (current_wiki_sorted_versions == "") {
+        current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
+    };
     var next_button = $('#next_button');
     var prev_button = $('#prev_button');
     var should_show_prev = current_page_version_key > 0;
@@ -310,9 +316,13 @@ function update_next_prev_buttons(){
     }
 }
 
-// stupid-simple: grabs the currently selected page from the page drop-down and saves it in a global
+// grabs the currently selected page from the page drop-down and saves it in a global
 // this should get called whenever the dropdown gets used (parker)
+// also sets c_w_s_v from c_w_s_v_u if the first is still empty (as is on first time called)
 function update_current_page() {
+    if (current_wiki_sorted_versions == {}) {
+        current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
+    };
     current_page = $("#page_list")[0].value;
     //i think that this edge case doesn't happen any more...leaving this in anyway just in case --Parker
     if(current_page == ""){
