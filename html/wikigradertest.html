@@ -66,9 +66,8 @@ $(function(){
 	//$("#after").datepicker();
 });
 
-//this gets fired when you click "Set wiki" (which you'll want to do after entering a wiki url)
-function set_wiki(){
 
+function set_wiki_a() {
     var revisions = {};
     //grab the url entered in the text field
     // TODO: if the last character is /, remove it!
@@ -90,8 +89,26 @@ function set_wiki(){
             var x = int;
             var fun_bike  = function callback(rev_data) {
                 pages_array[x]["data"] = rev_data["revisions"];
+                current_wiki_sorted_versions_unfiltered[pages_array[x]["name"]] = rev_data["revisions"];
+
+                var pages = $("#page_list")[0];
+                option = document.createElement("option");
+                option.appendChild(document.createTextNode(pages_array[x]["name"]));
+                pages.appendChild(option);
+
+                current_page = $("#page_list")[0].firstChild.firstChild.nodeValue;
+
+                
                 };
             return fun_bike;
+            };
+
+            function reformat_generator (pages_array, int) {
+            var y = int;
+            var tall_bike  = function reformat(pages_array, y) {
+                current_wiki_sorted_versions_unfiltered[[pages_array][y]["name"]] = pages_array["data"];
+                };
+            return tall_bike;
             };
 
             for (var m = 0; m < pages_dict["pages"].length; m++) {
@@ -101,75 +118,46 @@ function set_wiki(){
                 pages_array[m]["data"] = {};
             };
 
+            current_wiki_sorted_versions_unfiltered = {};
+
             for (var n = 0; n < pages_dict["pages"].length; n++) {
                 $.getJSON(pages_array[n]["url"], callback_generator(n) );
             };
-
     });
+};
+            
+function set_wiki_b() {
+            // My version of parker's housekeeping at the end of setwiki() (seth)
+            
+            // keep a copy of this data in _unfiltered, so that we still have it after applying a filter
+            current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
+            //temporarily disable page_menu onchange handler
+            temporarily_disabled_page_menu_handler = $("#page_list").change;
+            $("#page_list").change(function(){});
+            update_page_menu(current_wiki_sorted_versions);
+            $("#page_list").change(temporarily_disabled_page_menu_handler);
+            page_select = $("#page_list");
+            //make the current page be the first page in our list--this is an arbitrary choice
+            current_page = $("#page_list")[0].firstChild.firstChild.nodeValue;
 
-    //all_page_revisions = grab_all_page_revisions($.getJSON(pages_url));
+            // Date formatting
+            current_wiki_earliest_edit_timestamp = current_wiki_sorted_versions_unfiltered["FrontPage"][0];
+            var earliest_date = new Date(parseInt(current_wiki_earliest_edit_timestamp + "000"));
+            current_wiki_earliest_edit_datestr = earliest_date.format("UTC:yyyy-mm-dd-HH-MM-ss");
 
+            // button spooling
+            update_next_prev_buttons();
+            update_location_reporting();
+            update_wiki_age_reporting();
+            load_revision();
+};
 
+//this gets fired when you click "Set wiki" (which you'll want to do after entering a wiki url)
+function set_wiki(){
+set_wiki_a();
+set_wiki_b();
+};
 
-
-    url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetChanges&_type=jsontext'; // url for parker
-
-    // this is the version that only gets 100 results (seth)
-    //this is the ajaxey part. 'data' is what we get back from the API (parker)
-    $.getJSON(url, function(data) {
-
-        //this stuff happens as long as our ajaxey api call didnt fail (like 404 or something)
-        //reformat their revision history to only include the stuff that we want, and in the format that we want
-        //ALSO: this function sneakily figures out when the wiki was created and stores the answer in a global
-        current_wiki_sorted_versions_unfiltered = sort_revisions(data.changes);
-        //keep a copy of this data in _unfiltered, so that we still have it after applying a filter
-        //(like "only show stuff from X days after wiki creation")
-        current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered
-        //temporarily disable page_menu onchange handler
-        temporarily_disabled_page_menu_handler = $("#page_list").change;
-        $("#page_list").change(function(){});
-        update_page_menu(current_wiki_sorted_versions);
-        $("#page_list").change(temporarily_disabled_page_menu_handler);
-        //make the current page be the first page in our list--this is an arbitrary choice
-        current_page = $("#page_list")[0].firstChild.firstChild.nodeValue;
-        update_next_prev_buttons();
-        update_location_reporting();
-        update_wiki_age_reporting();
-        load_revision();
-    });
-}
-
-//reformat their revision history to only include the stuff that we want, and in the format that we want
-//ALSO: this function sneakily figures out when the wiki was created and stores the answer in a global
-//NOTE: all the rest of our functions like this just alter globals--maybe this one should just save its answer instead of returning it?
-function sort_revisions(list_of_changes) {
-    var change_dict = {};
-    //the below is arbitrary seeding--we're going to iterate and by the end actually have the earliest timestamp in the edit history
-    current_wiki_earliest_edit_timestamp = list_of_changes[0].time;
-    //loop through all the changes
-    for(i = 0; i < list_of_changes.length; i++){
-        next_page = list_of_changes[i].title;
-        //FILTER OUT ANY PAGE NAMES WITH A DOT ('.') in them--they're just files and we probably don't care about them
-        if(next_page.indexOf('.') == -1){
-            if(change_dict[next_page]) {
-                //'unshift' means 'prepend' -- this way the oldest version of the page is the first item in our list
-                change_dict[next_page].unshift(list_of_changes[i].time);
-            //make sure that we create the array key if we don't already have it
-            } else {
-                change_dict[next_page] = new Array(list_of_changes[i].time);
-            }
-            //if this is our earliest timestamp yet, make a note of it!
-            //at the end of this loop, we'll have the timestamp for the wiki creation date
-            if(list_of_changes[i].time < current_wiki_earliest_edit_timestamp){
-                current_wiki_earliest_edit_timestamp = list_of_changes[i].time;
-            }
-        }
-    }
-    //save our wiki creation date as a string, so we can report it to the humans
-    var earliest_date = new Date(parseInt(current_wiki_earliest_edit_timestamp + "000"));
-    current_wiki_earliest_edit_datestr = earliest_date.format("UTC:yyyy-mm-dd-HH-MM-ss");
-    return change_dict;
-}
 
 //filter out all the revisions above a certain timestamp ceiling (specified by the arg)
 function filter_revisions(ceiling_timestamp){
