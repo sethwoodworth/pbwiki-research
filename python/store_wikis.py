@@ -11,11 +11,9 @@ wikis_table = Table('edu_wikis', metadata,
     Column('url', Text),
 
     Column('files_count', Integer),
-    Column('files_checked_at', Integer),
     Column('files_list', Text),
 
     Column('page_char_size', Integer),
-    Column('page_checked_at', Integer),
     Column('page_html', Text),
     Column('page_name', Text),
     Column('page_revision', Integer),
