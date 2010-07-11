@@ -294,7 +294,7 @@ function supernext(){
 
 //show/hide the next/prev buttons as appropriate
 function update_next_prev_buttons(){
-    if (current_wiki_sorted_versions == "") {
+    if (current_wiki_sorted_versions) {
         current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
     };
     var next_button = $('#next_button');
