@@ -31,7 +31,7 @@ wikis_table = Table('edu_wikis', metadata,
     Column('times_checked_at', Integer),
 
     Column('works', Integer),
-    Column('have_pages', Integer)
+    Column('have_pages', Integer, default="0")
     )
 
 pages_table = Table('pages', metadata,
@@ -44,12 +44,16 @@ pages_table = Table('pages', metadata,
 revs_table = Table('revisions', metadata,
     Column('id', Integer, primary_key=True),
     Column('url', Text, ForeignKey('edu_wikis.url')),        # url of wiki
-    Column('hash', Text),       # pbworks generated hash of rev
-    Column('time', Integer),    # time of revision
     Column('page_title', Text, ForeignKey('pages.page')), # page
-    Column('type', Text),       # 'page' 'file' or 'other?'
-    Column('user', Text),       # whodunnit (username) TODO: Foreign key this to user table?
-    Column('html', Text)
+    Column('author', Text),       # whodunnit (username) TODO: Foreign key this to user table
+    Column('author_uid', Text),       # whodunnit (username) TODO: Foreign key this to user table
+    Column('html', Text),
+    Column('time', Integer),    # time of revision
+    Column('hash', Text),       # pbworks generated hash (oid) of rev
+    Column('revision', Integer),    # time of revision
+    Column('revurl', Text),       # pbworks generated hash (oid) of rev
+    Column('char_size', Integer),    # of characters according to pb
+    Column('wikistyle', Text),       # pbworks generated hash (oid) of rev
     )
 
 metadata.create_all()
