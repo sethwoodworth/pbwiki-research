@@ -4,20 +4,45 @@
 <!-- Except for Steven Levithan's date format library, under MIT license, and marked as such -->
 <head>
 <style type="text/css">
-    #results-box { /*height: 100%;*/ margin: 0; padding: 0; background: #456724; }
+    #results-box { /*height: 100%;*/ margin: 0; padding: 0; background: #5d87ac; }
     #results-box { margin: 0; padding: 0; }
     #results { clear: both; width: 100%; border: solid #ccc; border-width: 1px 0px 0px 0px; overflow: auto; margin: 0; padding: 0; background-color: #fff; height: 100%; margin: 0; padding: 0; }
     html{ margin: 0; padding: 0; }
-    body{ font-size: .8em; margin: 0; padding: 0; }
-    input, select{ padding: 0; margin: 0; border: 1px solid; }
-    #top_bar { display: block; height: 75px; background: orange; border-bottom: 1px solid black; font-size: 12px; font-weight: normal; text-align: left; color: black; padding-left: 10px; padding-top: 5px; overflow: auto; }
+    body{ font-size: 13px; font-color:#708699; margin: 0; padding: 0; font-family: Segoe UI,"Lucida Grande",Arial,"Liberation Sans", FreeSans, sans-serif; }
+    input, select{ padding: 0; margin: 0; border: 1px solid #708699; height: 19px; }
+    #top_bar { display: block; height: 85px; background: lightBlue; border-bottom: 1px solid black; font-size: 12px; font-weight: normal; text-align: left; color: black; padding-left: 0px; padding-top: 5px; overflow: auto; }
+    form{ margin: 0; padding: 0;}
+    h3 { margin: 0; padding: 0; }
+    #center_block { height: 75px; }
+    #page_list { background: white;}
+    #filter_by_days_since { background: white;}
+    .small_text { font-size: 0.8em; }
+    .big_text { font-size: 16px; font-weight: bold; color: #111;  }
+    .row { margin-top: 3px; }
+    .grey_text {   }
+    .button {
+        -moz-border-radius:3px 3px 3px 3px;
+        background-color:#4B88BE;
+        border-color:#708699;
+        height: 19px;
+        margin: 0px;
+    }
+    #row_three { margin-top: 10px; margin-bottom: 5px; height: 20px; }
 </style>
+<link rel="stylesheet" href="grid.css" type="text/css" media="screen, projection" />
+
 
 <link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/ui-darkness/jquery-ui.css" rel="stylesheet" />	
 <!-- TODO: use our own copy of jquery -->
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
 <script type="text/javascript" src="http://jquery-ui.googlecode.com/svn/tags/latest/ui/minified/jquery-ui.min.js"></script>
 <script type="text/javascript" src="datefmt.js"></script>
+<!-- pre-populates the url field with a placeholder then removes it on click -->
+<script> 
+function clearText(f){ if (f.defaultValue==f.value) f.value = "" } 
+</script>
+
+
 
 <script type="text/javascript">
 var current_wiki_url = 'http://alexmoye.pbworks.com';
@@ -215,7 +240,7 @@ function load_revision(){
     $("#results")[0].src = new_url;
     //assert that we're not in diff mode, and adjust the button accordingly
     in_diff_mode = false;
-    $("#diff_button")[0].value = 'changes since prev';
+    $("#diff_button")[0].value = 'diff';
 }
 
 // TODO: this is probably deprecated now... sadly...
@@ -270,7 +295,7 @@ function diff_click(){
         new_url = current_wiki_url + '/sdiff.php?first=' + current_page + "." + d1.format("UTC:yyyy-mm-dd-HH-MM-ss") + '&second=' + current_page + "." + d2.format("UTC:yyyy-mm-dd-HH-MM-ss");
         $("#results")[0].src = new_url;
         in_diff_mode = true;
-        $("#diff_button")[0].value = 'back to page view';
+        $("#diff_button")[0].value = '<< back';
     }
     else{
         load_revision();
@@ -294,7 +319,7 @@ function supernext(){
 
 //show/hide the next/prev buttons as appropriate
 function update_next_prev_buttons(){
-    if (current_wiki_sorted_versions == "") {
+    if (current_wiki_sorted_versions) {
         current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
     };
     var next_button = $('#next_button');
@@ -397,21 +422,21 @@ function resize_results() {
 }
 </script>
 </head>
-
+<!--"-->
 <body>
-    <div id="top_bar">
-    <form id="get_revs" name="get_revs">
-            Wiki domain:<input type="text" name="wiki_url" size="30"/>
-            <!--From: <input type="text" id="after" name="after"/> -->
-            <input type="button" value="Set wiki" onClick="set_wiki()"/>
-            page: 
-            <select id="page_list"/>
-                <option value="empty">(page list currently empty)</option>
-            </select>
-            <br />
-            filter by days from wiki creation:
-            <select id="filter_by_days_since"/>
-                <option value="99999">(unfiltered)</option>
+    <div style="background: lightBlue; border-bottom: 1px solid black;">
+    <div style="height:80px;" class="container_12">
+        <div id="row_one" class="row grid_12">
+            <form id="get_revs" name="get_revs">
+            <div class="grid_6 alpha">
+                <span class="big_text">PBwiki Quality Grader</span> by <a href="http://sethish.com">sethish</a> &amp; <a href="http://madebyparker.com">parker</a>
+            </div>
+
+            <div class="grid_1 ">
+                Filter by:
+            </div>
+            <select id="filter_by_days_since" class="grid_3 omega"/>
+                <option value="99999" class="grey_text">(days since creation)</option>
                 <option value="0">0</option>
                 <option value="1">1</option>
                 <option value="7">7</option>
@@ -419,27 +444,48 @@ function resize_results() {
                 <option value="100">100</option>
                 <option value="400">400</option>
             </select>
-            <span id="wiki_age">
-                This wiki was created
-            <span id="wiki_age_timestamp">XXXX-XX-XX-XX-XX-XX</span>
-            <br />
-            <span id="rev_list">
-                revision 
-            <span id="revision_number">X</span>/<span id="total_revision_count">X</span>
-            <span style="font-size:.8em;">(1 is the oldest)</span>
-            </span>
-            </span>
-            |
-            navigation:
-            <input type="button" value="< Older" onClick="prev_rev()" id="prev_button"/>
-            <input type="button" value="Newer >" onClick="next_rev()" id="next_button"/>
-            <!--Days since wiki creation: <input type="text" id="since" name="since"/>
-            <input type="button" value="Go" onClick="days_since()"/>
-            -->
-            <input type="button" id="diff_button" value="difference from prev" onClick="diff_click()"/>
-            <input type="button" id="supernext_button" value="SuperNext>>" onClick="supernext()"/>
+        </div>
+
+        <div id="row_two" class="row grid_12">
+            <input value=" valid pbwiki url here" onfocus="clearText(this)" type="text" name="wiki_url" class="grid_4 alpha"/>
+            <input class="grid_1 button" type="button" value="Set Wiki" onClick="set_wiki()"/>
+
+            <div style="width: 70px; margin-left: 10px; float:left; display: inline;" class="prefix_1">
+                Wiki page: 
+            </div>
+            <select id="page_list" class="grid_3 omega grey_text"/>
+                <option value="empty">(page list currently empty)</option>
+            </select>
+        </div>
+
+        <div id="row_three" class="row grid_12">
+
+            <div class="grid_2 alpha">
+                <span id="wiki_age">
+                    Created: 
+                <span id="wiki_age_timestamp">---- -- --</span>
+            </div>
+            <div class="grid_2 prefix_1">
+                <span id="rev_list">
+                    Revision: 
+                <span id="revision_number">X</span> of <span id="total_revision_count">X</span>
+                </span>
+                </span>
+            </div>
+
+            <div class="grid_7 omega">
+            <input class="button grid_1 alpha" type="button" value="< Older" onClick="prev_rev()" id="prev_button"/>
+            <input class="button grid_1" type="button" value="Newer >" onClick="next_rev()" id="next_button"/>
+            <input class="button grid_1" type="button" id="diff_button" value="Diff" onClick="diff_click()"/>
+            <input class="button grid_2 omega" type="button" id="supernext_button" value="SuperNext>>" onClick="supernext()"/>
+            </div>
         </form>
-    </div>
+        </div> <!-- row_three -->
+        </div> <!-- container_12 div-->
+    </div> <!-- top_bar div-->
+
+
+
     <div id="results-box">
         <iframe src="" id="results" name="results" frameborder="0" border="0"><p>THIS WONT WORK WITHOUT IFRAMES, go <a href="http://getfirefox.com">get firefox</a></p></iframe>
     </div>
