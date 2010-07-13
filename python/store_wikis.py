@@ -2,6 +2,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy import MetaData, Column, Table
 from sqlalchemy import Integer, Text
+from sqlalchemy import ForeignKey
 
 engine = create_engine('sqlite:///pbworks.sql')
 metadata = MetaData(bind=engine)
@@ -34,18 +35,18 @@ wikis_table = Table('edu_wikis', metadata,
     )
 
 pages_table = Table('pages', metadata,
-    Column{'id', Integer, primary_key=True),
-    Column('url', Text, ForeignKey('wikis_table.url')),
+    Column('id', Integer, primary_key=True),
+    Column('url', Text, ForeignKey('edu_wikis.url')),
     Column('page', Text),
     Column('have_revs', Integer)
     )
 
 revs_table = Table('revisions', metadata,
     Column('id', Integer, primary_key=True),
-    Column('url', Text, ForeignKey('wikis_table.url')),        # url of wiki
+    Column('url', Text, ForeignKey('edu_wikis.url')),        # url of wiki
     Column('hash', Text),       # pbworks generated hash of rev
     Column('time', Integer),    # time of revision
-    Column('page_title', Text, ForeignKey('pages_table.page')), # page
+    Column('page_title', Text, ForeignKey('pages.page')), # page
     Column('type', Text),       # 'page' 'file' or 'other?'
     Column('user', Text),       # whodunnit (username) TODO: Foreign key this to user table?
     Column('html', Text)
@@ -54,3 +55,4 @@ revs_table = Table('revisions', metadata,
 metadata.create_all()
 
 if __name__ == '__main__':
+    wd = glue()
