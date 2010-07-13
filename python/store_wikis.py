@@ -29,20 +29,28 @@ wikis_table = Table('edu_wikis', metadata,
     Column('time_comment', Integer),
     Column('times_checked_at', Integer),
 
-    Column('works', Integer)
+    Column('works', Integer),
+    Column('have_pages', Integer)
+    )
+
+pages_table = Table('pages', metadata,
+    Column{'id', Integer, primary_key=True),
+    Column('url', Text, ForeignKey('wikis_table.url')),
+    Column('page', Text),
+    Column('have_revs', Integer)
     )
 
 revs_table = Table('revisions', metadata,
     Column('id', Integer, primary_key=True),
-    Column('url', Text),        # url of wiki & page
+    Column('url', Text, ForeignKey('wikis_table.url')),        # url of wiki
     Column('hash', Text),       # pbworks generated hash of rev
     Column('time', Integer),    # time of revision
-    Column('page_title', Text), # edited page
+    Column('page_title', Text, ForeignKey('pages_table.page')), # page
     Column('type', Text),       # 'page' 'file' or 'other?'
-    Column('user', Text),       # whodunnit (username) TODO: Foreign key this to user table
+    Column('user', Text),       # whodunnit (username) TODO: Foreign key this to user table?
+    Column('html', Text)
     )
 
 metadata.create_all()
 
 if __name__ == '__main__':
-    wd = glue()
