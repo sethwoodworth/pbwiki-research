@@ -62,14 +62,14 @@ def examine_wiki(url):
         files_json = myswiki.get_files(url)
         files_dict = parse_files(files_json)
         #print "files_dict stored"
-        pages_json = myswiki.get_pages(url)
-        pages_dict = parse_pages(pages_json)
+        #pages_json = myswiki.get_pages(url) # not doing this now
+        #pages_dict = parse_pages(pages_json)
         #print "page_dict stored"
         times_json = myswiki.get_times(url)
         times_dict = parse_times(times_json)
         #print "times_dict"
-        page_json = myswiki.get_page(url)
-        page_dict = parse_page(page_json)
+        #page_json = myswiki.get_page(url)
+        #page_dict = parse_page(page_json)
         #print "page_dict"
         #name_dict = {"url" : url, "works" : 1}
         data_dict = dict(pages_dict.items() + files_dict.items() + times_dict.items() + page_dict.items() )
@@ -86,15 +86,11 @@ def examine_wiki(url):
 
 def get_wikilist():
     # Read the semi-private list of wikis from file
-    l = open('./nocheckin/wiki-list.txt', 'r')
+    l = open('../nocheckin/wiki-list.txt', 'r')
     ll = []
     for row in l:
         ll.append(row)    
     return ll
-
-def traverse_wikis():
-    # ?? Iterate over wikis and call other bits of api ?
-    return wikipages
 
 def store_wiki_dict(dict):
     i = wikis_table.insert()
