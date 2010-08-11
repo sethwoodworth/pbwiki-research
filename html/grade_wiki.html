@@ -190,19 +190,31 @@ function set_wiki(){
 //filter out all the revisions above a certain timestamp ceiling (specified by the arg)
 function filter_revisions(ceiling_timestamp){
     current_wiki_sorted_versions = {};
-    //loop through all of our revision timestamps
+    // remove pages created after date from the list
     for(var i in current_wiki_sorted_versions_unfiltered){
-        for(var j in current_wiki_sorted_versions_unfiltered[i]){
-            //only include the things that fit under our ceiling date (as specified in the dropdown)
-            //alert(current_wiki_sorted_versions_unfiltered[i][j]);
-            if(current_wiki_sorted_versions_unfiltered[i][j] <= ceiling_timestamp){
-                if (!([i] in current_wiki_sorted_versions)) {
-                    current_wiki_sorted_versions[i] = [];
-                   }; 
-                current_wiki_sorted_versions[i].push(current_wiki_sorted_versions_unfiltered[i][j]);
-            };
-        };
+        if(current_wiki_sorted_versions_unfiltered[i][0] <= ceiling_timestamp){
+            current_wiki_sorted_versions[i] = current_wiki_sorted_versions_unfiltered[i]};
     };
+    //for(var i in current_wiki_sorted_versions){
+    //    for(var j in current_wiki_sorted_versions[i]){
+
+
+
+
+
+    ////loop through all of our revision timestamps
+    //for(var i in current_wiki_sorted_versions_unfiltered){
+    //    for(var j in current_wiki_sorted_versions_unfiltered[i]){
+    //        //only include the things that fit under our ceiling date (as specified in the dropdown)
+    //        //alert(current_wiki_sorted_versions_unfiltered[i][j]);
+    //        if(current_wiki_sorted_versions_unfiltered[i][j] <= ceiling_timestamp){
+    //            if (!([i] in current_wiki_sorted_versions)) {
+    //                current_wiki_sorted_versions[i] = [];
+    //               }; 
+    //            current_wiki_sorted_versions[i].push(current_wiki_sorted_versions_unfiltered[i][j]);
+    //        };
+    //    };
+    //};
 };
 
 //this gets fired when you choose a ceiling number of days since creation from the drop-down
