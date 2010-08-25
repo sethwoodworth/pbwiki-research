@@ -4,23 +4,48 @@
 <!-- Except for Steven Levithan's date format library, under MIT license, and marked as such -->
 <head>
 <style type="text/css">
-    #results-box { /*height: 100%;*/ margin: 0; padding: 0; background: #456724; }
+    #results-box { /*height: 100%;*/ margin: 0; padding: 0; background: #5d87ac; }
     #results-box { margin: 0; padding: 0; }
     #results { clear: both; width: 100%; border: solid #ccc; border-width: 1px 0px 0px 0px; overflow: auto; margin: 0; padding: 0; background-color: #fff; height: 100%; margin: 0; padding: 0; }
     html{ margin: 0; padding: 0; }
-    body{ font-size: .8em; margin: 0; padding: 0; }
-    input, select{ padding: 0; margin: 0; border: 1px solid; }
-    #top_bar { display: block; height: 75px; background: orange; border-bottom: 1px solid black; font-size: 12px; font-weight: normal; text-align: left; color: black; padding-left: 10px; padding-top: 5px; overflow: auto; }
+    body{ font-size: 13px; font-color:#708699; margin: 0; padding: 0; font-family: Segoe UI,"Lucida Grande",Arial,"Liberation Sans", FreeSans, sans-serif; }
+    input, select{ padding: 0; margin: 0; border: 1px solid #708699; height: 19px; }
+    #top_bar { display: block; height: 85px; background: lightBlue; border-bottom: 1px solid black; font-size: 12px; font-weight: normal; text-align: left; color: black; padding-left: 0px; padding-top: 5px; overflow: auto; }
+    form{ margin: 0; padding: 0;}
+    h3 { margin: 0; padding: 0; }
+    #center_block { height: 75px; }
+    #page_list { background: white;}
+    #filter_by_days_since { background: white;}
+    .small_text { font-size: 0.8em; }
+    .big_text { font-size: 16px; font-weight: bold; color: #111;  }
+    .row { margin-top: 3px; }
+    .grey_text {   }
+    .button {
+        -moz-border-radius:3px 3px 3px 3px;
+        background-color:#4B88BE;
+        border-color:#708699;
+        height: 19px;
+        margin: 0px;
+    }
+    #row_three { margin-top: 10px; margin-bottom: 5px; height: 20px; }
 </style>
+<link rel="stylesheet" href="grid.css" type="text/css" media="screen, projection" />
+
 
 <link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/ui-darkness/jquery-ui.css" rel="stylesheet" />	
 <!-- TODO: use our own copy of jquery -->
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
 <script type="text/javascript" src="http://jquery-ui.googlecode.com/svn/tags/latest/ui/minified/jquery-ui.min.js"></script>
 <script type="text/javascript" src="datefmt.js"></script>
+<!-- pre-populates the url field with a placeholder then removes it on click -->
+<script> 
+function clearText(f){ if (f.defaultValue==f.value) f.value = "" } 
+</script>
+
+
 
 <script type="text/javascript">
-var current_wiki_url = 'http://basically.pbworks.com';
+var current_wiki_url = 'http://alexmoye.pbworks.com';
 //another possible example wiki: http://andrewscad.pbworks.com
 var current_page = ''; //name of current page, string
 var current_wiki_sorted_versions = {};
@@ -41,7 +66,6 @@ var current_wiki_days_since_ceiling_timestamp = 99999999999999999999999;
 //whether or not the page that we are currently looking at is a diff (as opposed to a specific page version):
 var in_diff_mode = false;
 
-//var debugmode = true;
 var debugmode = false;
 
 //these things get run after dom load
@@ -66,89 +90,129 @@ $(function(){
 	//$("#after").datepicker();
 });
 
-//this gets fired when you click "Set wiki" (which you'll want to do after entering a wiki url)
-function set_wiki(){
+
+function set_wiki_a() {
     var revisions = {};
     //grab the url entered in the text field
+    // TODO: if the last character is /, remove it!
     current_wiki_url = document.get_revs.wiki_url.value;
     //$.get(current_wiki_url);
     //for faster debugging:
-    if(debugmode){ current_wiki_url = 'http://basically.pbworks.com/'; }
-    //we were doing the below until we realized that it doesnt seem to work--due to pbwiki cross-browser security something or other?
-    //url = current_wiki_url + '/api_v2/?op=GetChanges&_type=jsontext&reverse=false';
-    //easy fix: use a server-side proxy
-    url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetChanges&_type=jsontext';
-    //this is the ajaxey part. 'data' is what we get back from the API
-    $.getJSON(url, function(data) {
-        //this stuff happens as long as our ajaxey api call didnt fail (like 404 or something)
-        //reformat their revision history to only include the stuff that we want, and in the format that we want
-        //ALSO: this function sneakily figures out when the wiki was created and stores the answer in a global
-        current_wiki_sorted_versions_unfiltered = sort_revisions(data.changes);
-        //keep a copy of this data in _unfiltered, so that we still have it after applying a filter
-        //(like "only show stuff from X days after wiki creation")
-        current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered
-        //temporarily disable page_menu onchange handler
-        temporarily_disabled_page_menu_handler = $("#page_list").change;
-        $("#page_list").change(function(){});
-        update_page_menu(current_wiki_sorted_versions);
-        $("#page_list").change(temporarily_disabled_page_menu_handler);
-        //make the current page be the first page in our list--this is an arbitrary choice
-        current_page = $("#page_list")[0].firstChild.firstChild.nodeValue;
-        update_next_prev_buttons();
-        update_location_reporting();
-        update_wiki_age_reporting();
-        load_revision();
-    });
-}
+    if(debugmode){ current_wiki_url = 'http://alexmoye.pbworks.com'; }
+    // Serverside proxy bc pbw avoids cross site scripting
+    pages_url = 'proxy.php?url=' + current_wiki_url + '/api_v2/?op=GetPages&verbose=false&_type=jsontext';
 
-//reformat their revision history to only include the stuff that we want, and in the format that we want
-//ALSO: this function sneakily figures out when the wiki was created and stores the answer in a global
-//NOTE: all the rest of our functions like this just alter globals--maybe this one should just save its answer instead of returning it?
-function sort_revisions(list_of_changes) {
-    var change_dict = {};
-    //the below is arbitrary seeding--we're going to iterate and by the end actually have the earliest timestamp in the edit history
-    current_wiki_earliest_edit_timestamp = list_of_changes[0].time;
-    //loop through all the changes
-    for(i = 0; i < list_of_changes.length; i++){
-        next_page = list_of_changes[i].title;
-        //FILTER OUT ANY PAGE NAMES WITH A DOT ('.') in them--they're just files and we probably don't care about them
-        if(next_page.indexOf('.') == -1){
-            if(change_dict[next_page]) {
-                //'unshift' means 'prepend' -- this way the oldest version of the page is the first item in our list
-                change_dict[next_page].unshift(list_of_changes[i].time);
-            //make sure that we create the array key if we don't already have it
-            } else {
-                change_dict[next_page] = new Array(list_of_changes[i].time);
+    // Seth's reimplementation without a limit of 100
+    // GetPages on the wiki
+    $.getJSON(pages_url, function(pages_dict) {
+        pages_array = new Array();
+
+            function callback_generator (int) {
+            var x = int;
+            var fun_bike  = function callback(rev_data) {
+                pages_array[x]["data"] = rev_data["revisions"];
+                current_wiki_sorted_versions_unfiltered[pages_array[x]["name"]] = rev_data["revisions"];
+
+                if (pages_array[x]["name"] == "FrontPage") {
+                    current_wiki_earliest_edit_timestamp = rev_data["revisions"][0];
+                    var earliest_date = new Date(parseInt(current_wiki_earliest_edit_timestamp + "000"));
+                    current_wiki_earliest_edit_datestr = earliest_date.format("UTC:yyyy-mm-dd");
+                    update_wiki_age_reporting();
+                    };
+
+                };
+            return fun_bike;
+            };
+
+            var pages = $("#page_list")[0];
+
+            while(pages.hasChildNodes())
+            {
+                pages.removeChild(pages.lastChild);
             }
-            //if this is our earliest timestamp yet, make a note of it!
-            //at the end of this loop, we'll have the timestamp for the wiki creation date
-            if(list_of_changes[i].time < current_wiki_earliest_edit_timestamp){
-                current_wiki_earliest_edit_timestamp = list_of_changes[i].time;
-            }
-        }
-    }
-    //save our wiki creation date as a string, so we can report it to the humans
-    var d = new Date(parseInt(current_wiki_earliest_edit_timestamp + "000"));
-    current_wiki_earliest_edit_datestr = d.format("UTC:yyyy-mm-dd-HH-MM-ss");
-    return change_dict;
-}
+
+            for (var m = 0; m < pages_dict["pages"].length; m++) {
+                pages_array[m] = {};
+                pages_array[m]["name"] = pages_dict["pages"][m]["name"];
+                pages_array[m]["url"] = 'proxy.php?url=' + current_wiki_url + '/api_v2/op/GetPageRevisions/page/' +  pages_dict["pages"][m]["name"].replace(/ /g,"+") + '/_type/jsontext';
+                pages_array[m]["data"] = {};
+
+                option = document.createElement("option");
+                option.appendChild(document.createTextNode(pages_array[m]["name"]));
+                pages.appendChild(option);
+            };
+
+            current_wiki_sorted_versions_unfiltered = {};
+
+            for (var n = 0; n < pages_dict["pages"].length; n++) {
+                $.getJSON(pages_array[n]["url"], callback_generator(n) );
+            };
+    });
+};
+            
+function set_wiki_b() {
+            // My version of parker's housekeeping at the end of setwiki() (seth)
+            
+            // keep a copy of this data in _unfiltered, so that we still have it after applying a filter
+            current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
+
+            ////temporarily disable page_menu onchange handler
+            //temporarily_disabled_page_menu_handler = $("#page_list").change;
+            //$("#page_list").change(function(){});
+            //update_page_menu(current_wiki_sorted_versions);
+            //$("#page_list").change(temporarily_disabled_page_menu_handler);
+            //page_select = $("#page_list");
+            ////make the current page be the first page in our list--this is an arbitrary choice
+            //current_page = $("#page_list")[0].firstChild.firstChild.nodeValue;
+
+            // prepare dropdown list handling
+            update_current_page();
+            update_page_menu(current_wiki_sorted_versions);
+
+            //// Date formatting
+            //current_wiki_earliest_edit_timestamp = current_wiki_sorted_versions_unfiltered["FrontPage"][0];
+            //var earliest_date = new Date(parseInt(current_wiki_earliest_edit_timestamp + "000"));
+            //current_wiki_earliest_edit_datestr = earliest_date.format("UTC:yyyy-mm-dd-HH-MM-ss");
+
+            // button spooling
+            update_next_prev_buttons();
+            update_location_reporting();
+            load_revision();
+};
+
+//this gets fired when you click "Set wiki" (which you'll want to do after entering a wiki url)
+function set_wiki(){
+    set_wiki_a();
+    set_wiki_b();
+    current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
+    current_page = "FrontPage";
+};
+
 
 //filter out all the revisions above a certain timestamp ceiling (specified by the arg)
 function filter_revisions(ceiling_timestamp){
     current_wiki_sorted_versions = {};
-    //loop through all of our revision timestamps
+    intermediate_sorted_versions = {};
+    // remove pages created after date from the list
     for(var i in current_wiki_sorted_versions_unfiltered){
-        for(var j in current_wiki_sorted_versions_unfiltered[i]){
-            //only include the things that fit under our ceiling date (as specified in the dropdown)
-            if(current_wiki_sorted_versions_unfiltered[i][j] <= ceiling_timestamp){
-                //(create the index in our array, if it doesn't exist yet)
-                if(!current_wiki_sorted_versions[i]){
-                    current_wiki_sorted_versions[i] = [];
-                }
-                current_wiki_sorted_versions[i].push(current_wiki_sorted_versions_unfiltered[i][j]);
-            }
-        }
-    }
+        if(current_wiki_sorted_versions_unfiltered[i][0] <= ceiling_timestamp){
+            intermediate_sorted_versions[i] = [];
+            // TODO: Add a drop_down list updater here for pretty pretty features
+            for(var j in current_wiki_sorted_versions_unfiltered[i]){
+                if(current_wiki_sorted_versions_unfiltered[i][j] <= ceiling_timestamp){
+                    intermediate_sorted_versions[i].push(current_wiki_sorted_versions_unfiltered[i][j])
+                };
+            };
+        };
+    };
+    current_wiki_sorted_versions = intermediate_sorted_versions;
+};
+
+//set the right global for our ceiling timestamp, based on the number of days selected in the form
+function calculate_days_since(){
+    var input = $('#filter_by_days_since')[0].value;
+    var input_in_seconds = Math.floor((input*60*60*24));
+    current_wiki_days_since_ceiling_timestamp = parseInt(current_wiki_earliest_edit_timestamp) + parseInt(input_in_seconds);
 }
 
 //this gets fired when you choose a ceiling number of days since creation from the drop-down
@@ -164,18 +228,11 @@ function restrict_by_days_since(){
     //(this way we can be sure that the page they end up looking at is one that existed before the ceiling date)
     update_page_menu(current_wiki_sorted_versions);
     update_current_page();
-    update_next_prev_buttons();
-    update_location_reporting();
-    update_wiki_age_reporting();
+
+    //update_location_reporting();
     load_revision();
 }
 
-//set the right global for our ceiling timestamp, based on the number of days selected in the form
-function calculate_days_since(){
-    var input = $('#filter_by_days_since')[0].value;
-    var input_in_seconds = Math.floor((input*60*60*24));
-    current_wiki_days_since_ceiling_timestamp = parseInt(current_wiki_earliest_edit_timestamp) + parseInt(input_in_seconds);
-}
 
 //actually load a page in the frame--based on the globals that we've been carefully keeping track of
 function load_revision(){
@@ -186,7 +243,7 @@ function load_revision(){
     $("#results")[0].src = new_url;
     //assert that we're not in diff mode, and adjust the button accordingly
     in_diff_mode = false;
-    $("#diff_button")[0].value = 'changes since prev';
+    $("#diff_button")[0].value = 'diff';
 }
 
 // TODO: this is probably deprecated now... sadly...
@@ -241,7 +298,7 @@ function diff_click(){
         new_url = current_wiki_url + '/sdiff.php?first=' + current_page + "." + d1.format("UTC:yyyy-mm-dd-HH-MM-ss") + '&second=' + current_page + "." + d2.format("UTC:yyyy-mm-dd-HH-MM-ss");
         $("#results")[0].src = new_url;
         in_diff_mode = true;
-        $("#diff_button")[0].value = 'back to page view';
+        $("#diff_button")[0].value = '<< back';
     }
     else{
         load_revision();
@@ -265,27 +322,42 @@ function supernext(){
 
 //show/hide the next/prev buttons as appropriate
 function update_next_prev_buttons(){
+    if (current_wiki_sorted_versions == []) {
+        current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
+    };
     var next_button = $('#next_button');
     var prev_button = $('#prev_button');
     var should_show_prev = current_page_version_key > 0;
-    var should_show_next = current_page_version_key < current_wiki_sorted_versions[current_page].length-1;
+    try{
+        var should_show_next = current_page_version_key < current_wiki_sorted_versions[current_page].length-1;
+        }
+    catch(err){
+        current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
+        var should_show_next = current_page_version_key < current_wiki_sorted_versions[current_page].length-1;
+        };
+
+    //TODO: make grey'd buttons prettier
     if(should_show_prev){
-        prev_button.show();
+        document.get_revs.prev_button.disabled = false;
     }
     else{
-        prev_button.hide();
+        document.get_revs.prev_button.disabled = true;
     }
     if(should_show_next){
-        next_button.show();
+        document.get_revs.next_button.disabled = false;
     }
     else{
-        next_button.hide();
+        document.get_revs.next_button.disabled = true;
     }
 }
 
-// stupid-simple: grabs the currently selected page from the page drop-down and saves it in a global
-// this should get called whenever the dropdown gets used
-function update_current_page(){
+// grabs the currently selected page from the page drop-down and saves it in a global
+// this should get called whenever the dropdown gets used (parker)
+// also sets c_w_s_v from c_w_s_v_u if the first is still empty (as is on first time called)
+function update_current_page() {
+    if (current_wiki_sorted_versions == {}) {
+        current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
+    };
     current_page = $("#page_list")[0].value;
     //i think that this edge case doesn't happen any more...leaving this in anyway just in case --Parker
     if(current_page == ""){
@@ -360,21 +432,21 @@ function resize_results() {
 }
 </script>
 </head>
-
+<!--"-->
 <body>
-    <div id="top_bar">
-    <form id="get_revs" name="get_revs">
-            Wiki domain:<input type="text" name="wiki_url" size="30"/>
-            <!--From: <input type="text" id="after" name="after"/> -->
-            <input type="button" value="Set wiki" onClick="set_wiki()"/>
-            page: 
-            <select id="page_list"/>
-                <option value="empty">(page list currently empty)</option>
-            </select>
-            <br />
-            filter by days from wiki creation:
-            <select id="filter_by_days_since"/>
-                <option value="99999">(unfiltered)</option>
+    <div style="background: lightBlue; border-bottom: 1px solid black;">
+    <div style="height:80px;" class="container_12">
+        <div id="row_one" class="row grid_12">
+            <form id="get_revs" name="get_revs">
+            <div class="grid_6 alpha">
+                <span class="big_text">PBwiki Quality Grader</span> by <a href="http://sethish.com">sethish</a> &amp; <a href="http://madebyparker.com">parker</a>
+            </div>
+
+            <div class="grid_1 ">
+                Filter by:
+            </div>
+            <select id="filter_by_days_since" class="grid_3 omega"/>
+                <option value="99999" class="grey_text">(days since creation)</option>
                 <option value="0">0</option>
                 <option value="1">1</option>
                 <option value="7">7</option>
@@ -382,29 +454,50 @@ function resize_results() {
                 <option value="100">100</option>
                 <option value="400">400</option>
             </select>
-            <span id="wiki_age">
-                This wiki was created
-            <span id="wiki_age_timestamp">XXXX-XX-XX-XX-XX-XX</span>
-            <br />
-            <span id="rev_list">
-                revision 
-            <span id="revision_number">X</span>/<span id="total_revision_count">X</span>
-            <span style="font-size:.8em;">(1 is the oldest)</span>
-            </span>
-            </span>
-            |
-            navigation:
-            <input type="button" value="< Older" onClick="prev_rev()" id="prev_button"/>
-            <input type="button" value="Newer >" onClick="next_rev()" id="next_button"/>
-            <!--Days since wiki creation: <input type="text" id="since" name="since"/>
-            <input type="button" value="Go" onClick="days_since()"/>
-            -->
-            <input type="button" id="diff_button" value="difference from prev" onClick="diff_click()"/>
-            <input type="button" id="supernext_button" value="SuperNext>>" onClick="supernext()"/>
+        </div>
+
+        <div id="row_two" class="row grid_12">
+            <input value=" valid pbwiki url here" onfocus="clearText(this)" type="text" name="wiki_url" class="grid_4 alpha"/>
+            <input class="grid_1 button" type="button" value="Set Wiki" onClick="set_wiki()"/>
+
+            <div style="width: 70px; margin-left: 10px; float:left; display: inline;" class="prefix_1">
+                Wiki page: 
+            </div>
+            <select id="page_list" class="grid_3 omega grey_text"/>
+                <option value="empty">(page list currently empty)</option>
+            </select>
+        </div>
+
+        <div id="row_three" class="row grid_12">
+
+            <div class="grid_2 alpha">
+                <span id="wiki_age">
+                    Created: 
+                <span id="wiki_age_timestamp">---- -- --</span>
+            </div>
+            <div class="grid_2 prefix_1">
+                <span id="rev_list">
+                    Revision: 
+                <span id="revision_number">X</span> of <span id="total_revision_count">X</span>
+                </span>
+                </span>
+            </div>
+
+            <div class="grid_7 omega">
+            <input class="button grid_1 alpha" type="button" value="< Older" onClick="prev_rev()" id="prev_button"/>
+            <input class="button grid_1" type="button" value="Newer >" onClick="next_rev()" id="next_button"/>
+            <input class="button grid_1" type="button" id="diff_button" value="Diff" onClick="diff_click()"/>
+            <input class="button grid_2 omega" type="button" id="supernext_button" value="SuperNext>>" onClick="supernext()"/>
+            </div>
         </form>
-    </div>
+        </div> <!-- row_three -->
+        </div> <!-- container_12 div-->
+    </div> <!-- top_bar div-->
+
+
+
     <div id="results-box">
-        <iframe src="" id="results" name="results" frameborder="0" border="0"><p>THIS WONT WORK WITHOUT IFRAMES</p></iframe>
+        <iframe src="" id="results" name="results" frameborder="0" border="0"><p>THIS WONT WORK WITHOUT IFRAMES, go <a href="http://getfirefox.com">get firefox</a></p></iframe>
     </div>
 
 </body>
