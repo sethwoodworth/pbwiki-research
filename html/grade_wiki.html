@@ -76,7 +76,7 @@ $(function(){
     });
     $("#page_list").change(function(){
         update_current_page();
-        current_page_version_key = 0;
+        current_page_version_key = is_last_revision();
         update_next_prev_buttons();
         update_location_reporting()
         load_revision();
@@ -177,6 +177,7 @@ function set_wiki_b() {
             // button spooling
             update_next_prev_buttons();
             update_location_reporting();
+            
             load_revision();
 };
 
@@ -222,7 +223,7 @@ function restrict_by_days_since(){
     //do the actual filtering
     filter_revisions(current_wiki_days_since_ceiling_timestamp);
     //recet the page version so that we're sure to be under our threshold
-    current_page_version_key = 0;
+    current_page_version_key = is_last_rev();
     //update the list of pages
     //we're careful to do this before running update_current_page
     //(this way we can be sure that the page they end up looking at is one that existed before the ceiling date)
@@ -230,6 +231,23 @@ function restrict_by_days_since(){
     update_current_page();
 
     //update_location_reporting();
+    load_revision();
+}
+
+//immediately moves to first stored revision by setting current_page_version_key and then reloading
+function first_revision(){
+    current_page_version_key = 0;
+    load_revision();
+}
+
+//return the last revision of the current page
+function is_last_rev(){
+    last = current_wiki_sorted_versions[current_page].length-1;
+    return last;
+}
+
+function last_revision(){
+    current_page_version_key = is_last_rev();
     load_revision();
 }
 
@@ -454,6 +472,7 @@ function resize_results() {
                 <option value="100">100</option>
                 <option value="400">400</option>
             </select>
+            <input class="button grid_2 omega" type="button" id="supernext_button" value="SuperNext>>" onClick="supernext()"/>
         </div>
 
         <div id="row_two" class="row grid_12">
@@ -466,6 +485,7 @@ function resize_results() {
             <select id="page_list" class="grid_3 omega grey_text"/>
                 <option value="empty">(page list currently empty)</option>
             </select>
+            <input class="button grid_2" type="button" id="diff_button" value="Diff Mode" onClick="diff_click()"/>
         </div>
 
         <div id="row_three" class="row grid_12">
@@ -483,11 +503,11 @@ function resize_results() {
                 </span>
             </div>
 
-            <div class="grid_7 omega">
-            <input class="button grid_1 alpha" type="button" value="< Older" onClick="prev_rev()" id="prev_button"/>
-            <input class="button grid_1" type="button" value="Newer >" onClick="next_rev()" id="next_button"/>
-            <input class="button grid_1" type="button" id="diff_button" value="Diff" onClick="diff_click()"/>
-            <input class="button grid_2 omega" type="button" id="supernext_button" value="SuperNext>>" onClick="supernext()"/>
+            <div class="grid_6 prefix_1 omega">
+                <input class="button grid_1 alpha" type="button" value="<< First" onClick="first_revision()" id="first_button"/>
+                <input class="button grid_1" type="button" value="< Older" onClick="prev_rev()" id="prev_button"/>
+                <input class="button grid_1" type="button" value="Newer >" onClick="next_rev()" id="next_button"/>
+                <input class="button grid_1" type="button" value="Last >>" onClick="next_rev()" id="last_button"/>
             </div>
         </form>
         </div> <!-- row_three -->
