@@ -76,7 +76,7 @@ $(function(){
     });
     $("#page_list").change(function(){
         update_current_page();
-        current_page_version_key = is_last_revision();
+        current_page_version_key = 0;
         update_next_prev_buttons();
         update_location_reporting()
         load_revision();
@@ -223,7 +223,7 @@ function restrict_by_days_since(){
     //do the actual filtering
     filter_revisions(current_wiki_days_since_ceiling_timestamp);
     //recet the page version so that we're sure to be under our threshold
-    current_page_version_key = is_last_rev();
+    current_page_version_key = 0;
     //update the list of pages
     //we're careful to do this before running update_current_page
     //(this way we can be sure that the page they end up looking at is one that existed before the ceiling date)
