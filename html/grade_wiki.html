@@ -184,38 +184,36 @@ function set_wiki_b() {
 function set_wiki(){
     set_wiki_a();
     set_wiki_b();
+    current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
+    current_page = "FrontPage";
 };
 
 
 //filter out all the revisions above a certain timestamp ceiling (specified by the arg)
 function filter_revisions(ceiling_timestamp){
     current_wiki_sorted_versions = {};
+    intermediate_sorted_versions = {};
     // remove pages created after date from the list
     for(var i in current_wiki_sorted_versions_unfiltered){
         if(current_wiki_sorted_versions_unfiltered[i][0] <= ceiling_timestamp){
-            current_wiki_sorted_versions[i] = current_wiki_sorted_versions_unfiltered[i]};
+            intermediate_sorted_versions[i] = [];
+            // TODO: Add a drop_down list updater here for pretty pretty features
+            for(var j in current_wiki_sorted_versions_unfiltered[i]){
+                if(current_wiki_sorted_versions_unfiltered[i][j] <= ceiling_timestamp){
+                    intermediate_sorted_versions[i].push(current_wiki_sorted_versions_unfiltered[i][j])
+                };
+            };
+        };
     };
-    //for(var i in current_wiki_sorted_versions){
-    //    for(var j in current_wiki_sorted_versions[i]){
-
-
-
-
-
-    ////loop through all of our revision timestamps
-    //for(var i in current_wiki_sorted_versions_unfiltered){
-    //    for(var j in current_wiki_sorted_versions_unfiltered[i]){
-    //        //only include the things that fit under our ceiling date (as specified in the dropdown)
-    //        //alert(current_wiki_sorted_versions_unfiltered[i][j]);
-    //        if(current_wiki_sorted_versions_unfiltered[i][j] <= ceiling_timestamp){
-    //            if (!([i] in current_wiki_sorted_versions)) {
-    //                current_wiki_sorted_versions[i] = [];
-    //               }; 
-    //            current_wiki_sorted_versions[i].push(current_wiki_sorted_versions_unfiltered[i][j]);
-    //        };
-    //    };
-    //};
+    current_wiki_sorted_versions = intermediate_sorted_versions;
 };
+
+//set the right global for our ceiling timestamp, based on the number of days selected in the form
+function calculate_days_since(){
+    var input = $('#filter_by_days_since')[0].value;
+    var input_in_seconds = Math.floor((input*60*60*24));
+    current_wiki_days_since_ceiling_timestamp = parseInt(current_wiki_earliest_edit_timestamp) + parseInt(input_in_seconds);
+}
 
 //this gets fired when you choose a ceiling number of days since creation from the drop-down
 function restrict_by_days_since(){
@@ -229,19 +227,12 @@ function restrict_by_days_since(){
     //we're careful to do this before running update_current_page
     //(this way we can be sure that the page they end up looking at is one that existed before the ceiling date)
     update_page_menu(current_wiki_sorted_versions);
-    //update_current_page();
-    update_next_prev_buttons();
-    update_location_reporting();
-    update_wiki_age_reporting();
+    update_current_page();
+
+    //update_location_reporting();
     load_revision();
 }
 
-//set the right global for our ceiling timestamp, based on the number of days selected in the form
-function calculate_days_since(){
-    var input = $('#filter_by_days_since')[0].value;
-    var input_in_seconds = Math.floor((input*60*60*24));
-    current_wiki_days_since_ceiling_timestamp = parseInt(current_wiki_earliest_edit_timestamp) + parseInt(input_in_seconds);
-}
 
 //actually load a page in the frame--based on the globals that we've been carefully keeping track of
 function load_revision(){
@@ -331,13 +322,20 @@ function supernext(){
 
 //show/hide the next/prev buttons as appropriate
 function update_next_prev_buttons(){
-    if (current_wiki_sorted_versions) {
+    if (current_wiki_sorted_versions == []) {
         current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
     };
     var next_button = $('#next_button');
     var prev_button = $('#prev_button');
     var should_show_prev = current_page_version_key > 0;
-    var should_show_next = current_page_version_key < current_wiki_sorted_versions[current_page].length-1;
+    try{
+        var should_show_next = current_page_version_key < current_wiki_sorted_versions[current_page].length-1;
+        }
+    catch(err){
+        current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
+        var should_show_next = current_page_version_key < current_wiki_sorted_versions[current_page].length-1;
+        };
+
     //TODO: make grey'd buttons prettier
     if(should_show_prev){
         document.get_revs.prev_button.disabled = false;
