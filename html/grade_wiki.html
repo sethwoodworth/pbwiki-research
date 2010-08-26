@@ -237,6 +237,8 @@ function restrict_by_days_since(){
 //immediately moves to first stored revision by setting current_page_version_key and then reloading
 function first_revision(){
     current_page_version_key = 0;
+    update_next_prev_buttons();
+    update_location_reporting()
     load_revision();
 }
 
@@ -248,6 +250,8 @@ function is_last_rev(){
 
 function last_revision(){
     current_page_version_key = is_last_rev();
+    update_next_prev_buttons();
+    update_location_reporting()
     load_revision();
 }
 
@@ -507,7 +511,7 @@ function resize_results() {
                 <input class="button grid_1 alpha" type="button" value="<< First" onClick="first_revision()" id="first_button"/>
                 <input class="button grid_1" type="button" value="< Older" onClick="prev_rev()" id="prev_button"/>
                 <input class="button grid_1" type="button" value="Newer >" onClick="next_rev()" id="next_button"/>
-                <input class="button grid_1" type="button" value="Last >>" onClick="next_rev()" id="last_button"/>
+                <input class="button grid_1" type="button" value="Last >>" onClick="last_revision()" id="last_button"/>
             </div>
         </form>
         </div> <!-- row_three -->
