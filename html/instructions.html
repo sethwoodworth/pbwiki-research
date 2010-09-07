@@ -1,0 +1,143 @@
+<html>
+<!-- Original Copyright Seth Woodworth 02010                                                          -->
+<head>
+<title>HGSE PBwiki Coding Instructions</title>
+<style type="text/css">
+    #results-box { /*height: 100%;*/ margin: 0; padding: 0; background: #5d87ac; }
+    #results-box { margin: 0; padding: 0; }
+    #results { clear: both; width: 100%; border: solid #ccc; border-width: 1px 0px 0px 0px; overflow: auto; margin: 0; padding: 0; background-color: #fff; height: 100%; margin: 0; padding: 0; }
+    html{ margin: 0; padding: 0; }
+    body{ font-size: 13px; font-color:#708699; margin: 0; padding: 0; font-family: Segoe UI,"Lucida Grande",Arial,"Liberation Sans", FreeSans, sans-serif; }
+    input, select{ padding: 0; margin: 0; border: 1px solid #708699; height: 19px; }
+    #top_bar { display: block; height: 85px; background: lightBlue; border-bottom: 1px solid black; font-size: 12px; font-weight: normal; text-align: left; color: black; padding-left: 0px; padding-top: 5px; overflow: auto; }
+    form{ margin: 0; padding: 0;}
+    h3 { margin: 0; padding: 0; }
+    #center_block { height: 75px; }
+    #page_list { background: white;}
+    #filter_by_days_since { background: white;}
+    .small_text { font-size: 0.8em; }
+    .big_text { font-size: 16px; font-weight: bold; color: #111;  }
+    .row { margin-top: 3px; }
+    .grey_text {   }
+    .button {
+        -moz-border-radius:3px 3px 3px 3px;
+        background-color:#4B88BE;
+        border-color:#708699;
+        height: 19px;
+        margin: 0px;
+    }
+    #row_three { margin-top: 10px; margin-bottom: 5px; height: 20px; }
+</style>
+<link rel="stylesheet" href="grid.css" type="text/css" media="screen, projection" />
+
+
+<link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/ui-darkness/jquery-ui.css" rel="stylesheet" />	
+<!-- TODO: use our own copy of jquery -->
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+<script type="text/javascript" src="http://jquery-ui.googlecode.com/svn/tags/latest/ui/minified/jquery-ui.min.js"></script>
+<script type="text/javascript" src="datefmt.js"></script>
+<!-- pre-populates the url field with a placeholder then removes it on click -->
+<script> 
+function clearText(f){ if (f.defaultValue==f.value) f.value = "" } 
+</script>
+
+
+
+</head>
+
+<body>
+
+<div class="container_12">
+    <div class="row grid_10 prefix_1" >
+        <div style="border: 1px solid black; height: 400px;" class="grid_10">
+            <div style="margin-top:20px;" class="grid_4 prefix_3 suffix_3">
+                <h3>PBwiki Coding Instructions</h3>
+            </div>
+            <div class="grid_8 prefix_1 suffix_1">
+                <ul>
+                    <li>Paste a vaild PBwiki URL in the 'Set Wiki' field to begin</li>
+                    <br/>
+                    <li>The pages from the <b>Wiki page:</b> dropdown should now be selectable </li>
+                        <ul>
+                            <li>When you choose a page, the latest revision of the page will appear in <b>this</b> space </li>
+                            <li>Choose <i>(Instructions)</i> to return to this page</li>
+                        </ul>
+                    <br/>
+                    <li>Use the <b>Filter by:</b> dropdown to set an upper limit to the visable page revisions</li>
+                        <ul>
+                            <li>Keep in mind that the sidebar still shows the latest version of the sidebar, regardless of the date of the revision you are viewing</li>
+                            <li>Set <b>Filter by:</b> back to <i>(Unfiltered)</i> to see all revisions</li>
+                        </ul>
+                </ul>
+            </div>
+
+
+    </div>
+</div> <!-- container -->
+
+
+<!--
+    <div style="background: lightBlue; border-bottom: 1px solid black;">
+    <div style="height:80px;" class="container_12">
+        <div id="row_one" class="row grid_12">
+            <form id="get_revs" name="get_revs">
+            <div class="grid_6 alpha">
+                <span class="big_text">PBwiki Coding Tool</span> by <a href="http://sethish.com">sethish</a> &amp; <a href="http://madebyparker.com">parker</a>
+            </div>
+
+            <div class="grid_1 ">
+                Filter by:
+            </div>
+            <select id="filter_by_days_since" class="grid_3 omega"/>
+                <option value="99999" class="grey_text">(days since creation)</option>
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="7">7</option>
+                <option value="30">30</option>
+                <option value="100">100</option>
+                <option value="400">400</option>
+            </select>
+            <input class="button grid_2 omega" type="button" id="supernext_button" value="SuperNext>>" onClick="supernext()"/>
+        </div>
+
+        <div id="row_two" class="row grid_12">
+            <input value=" valid pbwiki url here" onfocus="clearText(this)" type="text" name="wiki_url" class="grid_4 alpha"/>
+            <input class="grid_1 button" type="button" value="Set Wiki" onClick="set_wiki()"/>
+
+            <div style="width: 70px; margin-left: 10px; float:left; display: inline;" class="prefix_1">
+                Wiki page: 
+            </div>
+            <select id="page_list" class="grid_3 omega grey_text"/>
+                <option value="empty">(page list currently empty)</option>
+            </select>
+            <input class="button grid_2" type="button" id="diff_button" value="Diff Mode" onClick="diff_click()"/>
+        </div>
+
+        <div id="row_three" class="row grid_12">
+
+            <div class="grid_2 alpha">
+                <span id="wiki_age">
+                    Created: 
+                <span id="wiki_age_timestamp">---- -- --</span>
+            </div>
+            <div class="grid_2 prefix_1">
+                <span id="rev_list">
+                    Revision: 
+                <span id="revision_number">X</span> of <span id="total_revision_count">X</span>
+                </span>
+                </span>
+            </div>
+
+            <div class="grid_6 prefix_1 omega">
+                <input class="button grid_1 alpha" type="button" value="<< First" onClick="first_revision()" id="first_button"/>
+                <input class="button grid_1" type="button" value="< Older" onClick="prev_rev()" id="prev_button"/>
+                <input class="button grid_1" type="button" value="Newer >" onClick="next_rev()" id="next_button"/>
+                <input class="button grid_1" type="button" value="Last >>" onClick="last_revision()" id="last_button"/>
+            </div>
+        </form>
+        </div> <!-- row_three -->
+        </div> <!-- container_12 div-->
+    </div> <!-- top_bar div-->
+
+</body>
+</html>

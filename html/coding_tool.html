@@ -79,25 +79,25 @@ $(function(){
         update_current_page();
         //current_page_version_key = 0; //load first revision on page select
 
-        try{
-            //load last revision on page select
-            current_page_version_key = current_wiki_sorted_versions[current_page].length-1;
-            }
-        catch(err){
-            current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
-            current_page_version_key = current_wiki_sorted_versions[current_page].length-1;
-            };
+            try{
+                //load last revision on page select
+                current_page_version_key = current_wiki_sorted_versions[current_page].length-1;
+                }
+            catch(err){
+                current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
+                current_page_version_key = current_wiki_sorted_versions[current_page].length-1;
+                };
 
         update_next_prev_buttons();
         update_location_reporting()
         load_revision();
-        //days_since();
     });
     //for resizing the results iframe to take up all (read: most) of the window
     window.onresize = function() { resize_results(); };
     resize_results();
 
-    //we're not using this for now:
+    $("#results")[0].src = "./instructions.html";
+
 	//$("#after").datepicker();
 });
 
