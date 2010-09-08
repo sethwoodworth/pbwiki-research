@@ -96,7 +96,7 @@ $(function(){
     window.onresize = function() { resize_results(); };
     resize_results();
 
-    $("#results")[0].src = "./instructions.html";
+    //$("#results")[0].src = "./instructions.html";
 
 	//$("#after").datepicker();
 });
@@ -197,7 +197,8 @@ function set_wiki(){
     set_wiki_a();
     set_wiki_b();
     current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
-    current_page = "FrontPage";
+    current_page = "(Instructions)";
+    $("#results")[0].src = "./instructions.html";
 };
 
 
@@ -390,6 +391,7 @@ function update_next_prev_buttons(){
 function update_current_page() {
     if (current_wiki_sorted_versions == {}) {
         current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
+        current_page = $("#page_list")[0].value;
     };
     current_page = $("#page_list")[0].value;
     //i think that this edge case doesn't happen any more...leaving this in anyway just in case --Parker
@@ -400,16 +402,32 @@ function update_current_page() {
 
 //update the list of pages in the dropdown, based on what's in our dict mapping page names to lists of revision timestamps
 function update_page_menu(change_dict) {
-    var pages = $("#page_list")[0];
-    while(pages.hasChildNodes())
+    //TODO: update method to this: http://chiragrdarji.wordpress.com/2007/06/06/add-items-in-drop-down-list-or-list-box-using-javascript
+    var pages = $("#page_list")[0].length=0;
+    $("#page_list")[0].options[0] =  new Option("(Instructions)", "(Instructions)", true, true);
+
+    for (i=0; i<change_dict.length; i++){
+        var page = change_dict[i];
+        $("#page_list")[0].options[i+1]=new Option(page, page, false, false);
+    };
+
+
+
+/*    while(pages.hasChildNodes())
     {
         pages.removeChild(pages.lastChild);
     }
+    var instructions_entry = document.createElement("option");
+    instructions_entry.appendChild(document.createTextNode("(Instructions)"));
+    pages.appendChild(instructions_entry);
+    current_page = "(Instructions)";
     for(var page in change_dict) { 
         option = document.createElement("option");
         option.appendChild(document.createTextNode(page));
         pages.appendChild(option);
     }
+    $("#page_list")[0].selected
+*/
 }
 
 //jump to the previous revision
@@ -500,7 +518,7 @@ function resize_results() {
                 Wiki page: 
             </div>
             <select id="page_list" class="grid_3 omega grey_text"/>
-                <option value="empty">(page list currently empty)</option>
+                <option value="empty">(Instructions)</option>
             </select>
             <input class="button grid_2" type="button" id="diff_button" value="Diff Mode" onClick="diff_click()"/>
         </div>
