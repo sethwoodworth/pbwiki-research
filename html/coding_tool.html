@@ -120,6 +120,7 @@ function set_wiki_a() {
 
             function callback_generator (int) {
             var x = int;
+            //TODO: naming fun_bike isn't nessisary, just return funciton(rev_data){...
             var fun_bike  = function callback(rev_data) {
                 pages_array[x]["data"] = rev_data["revisions"];
                 current_wiki_sorted_versions_unfiltered[pages_array[x]["name"]] = rev_data["revisions"];
