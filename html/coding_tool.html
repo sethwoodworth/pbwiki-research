@@ -199,7 +199,6 @@ function set_wiki(){
     set_wiki_b();
     current_wiki_sorted_versions = current_wiki_sorted_versions_unfiltered;
     current_page = "(Instructions)";
-    $("#results")[0].src = "./instructions.html";
 };
 
 
@@ -273,7 +272,7 @@ function last_revision(){
 function load_revision(){
     //set up the url
     d = new Date(parseInt(current_wiki_sorted_versions[current_page][current_page_version_key] + "000"));
-    new_url = current_wiki_url + '/' + current_page + "." + d.format("UTC:yyyy-mm-dd-HH-MM-ss");
+    new_url = current_wiki_url + '/w/page/' + current_page + "?rev=" + current_wiki_sorted_versions[current_page][current_page_version_key];                                                                                        
     //take us there in the frame
     $("#results")[0].src = new_url;
     //assert that we're not in diff mode, and adjust the button accordingly
